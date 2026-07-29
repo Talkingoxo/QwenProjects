@@ -1,21 +1,4 @@
-name = "cloudflare-worker"
+name = "qwen-projects-worker"
 main = "src/index.js"
-compatibility_date = "2024-01-01"
-
-# Explicitly define as a Worker script (no assets directory)
-
-# [vars]
-# MY_VAR = "my-variable"
-
-# [[kv_namespaces]]
-# binding = "MY_KV_NAMESPACE"
-# id = "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
-
-# [[r2_buckets]]
-# binding = "MY_BUCKET"
-# bucket_name = "my-bucket"
-
-# [[d1_databases]]
-# binding = "DB"
-# database_name = "my-database"
-# database_id = ""
+compatibility_date = "2026-07-30"
+workers_dev = true
