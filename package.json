@@ -1,14 +1,14 @@
 {
-  "name": "cloudflare-worker",
+  "name": "qwen-projects-worker",
   "version": "1.0.0",
   "private": true,
+  "type": "module",
   "scripts": {
     "dev": "wrangler dev",
     "deploy": "wrangler deploy",
-    "test": "vitest"
+    "test": "node --test"
   },
   "devDependencies": {
-    "wrangler": "^4.0.0",
-    "vitest": "^1.0.0"
+    "wrangler": "^4.107.0"
   }
 }
