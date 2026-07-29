@@ -1,80 +1,36 @@
-# Cloudflare Worker Project
+# QwenProjects Worker
 
-A ready-to-deploy Cloudflare Workers project with testing support.
+A minimal Cloudflare Worker with tested HTTP endpoints and controlled GitHub Actions workflows.
 
-## Structure
+## Endpoints
 
-```
-/workspace
-├── package.json          # Node.js dependencies and scripts
-├── wrangler.toml         # Cloudflare Workers configuration
-├── src/
-│   ├── index.js          # Main worker entry point
-│   └── index.test.js     # Unit tests
-└── README.md             # This file
-```
+| Method | Path | Result |
+| --- | --- | --- |
+| `GET` / `HEAD` | `/` | Worker status JSON |
+| `GET` / `HEAD` | `/api` | API status and timestamp |
+| Other methods | Any path | `405 Method Not Allowed` |
+| `GET` / `HEAD` | Any other path | `404 Not Found` |
 
-## Getting Started
+## Local development
 
-### Prerequisites
-- Node.js 18+ installed
-- Cloudflare account
-- Wrangler CLI (`npm install -g wrangler`)
-
-### Installation
+Requires Node.js 20 or newer.
 
 ```bash
 npm install
-```
-
-### Development
-
-Run the worker locally:
-
-```bash
+npm test
 npm run dev
 ```
 
-This starts a local development server at `http://localhost:8787`.
+Wrangler serves the Worker locally, normally at `http://localhost:8787`.
 
-### Testing
+## Deployment
 
-Run the test suite:
+Deployment is intentionally manual so unreviewed AI changes are not published automatically.
 
-```bash
-npm test
-```
+1. In the repository settings, add these GitHub Actions secrets:
+   - `CLOUDFLARE_API_TOKEN`
+   - `CLOUDFLARE_ACCOUNT_ID`
+2. Open **Actions → Deploy Worker**.
+3. Select **Run workflow**.
 
-### Deployment
-
-Deploy to Cloudflare:
-
-```bash
-npm run deploy
-```
-
-**Note:** Before deploying, you need to:
-1. Login to Cloudflare: `npx wrangler login`
-2. Update `wrangler.toml` with your worker name and any required bindings
-
-## Configuration
-
-Edit `wrangler.toml` to configure:
-- Worker name
-- Environment variables (`[vars]`)
-- KV Namespaces
-- R2 Buckets
-- D1 Databases
-- Other bindings
-
-## Example Endpoints
-
-- `GET /` - Returns a welcome message
-- `GET /api` - Returns API status
-- Any other route - Returns 404
-
-## Resources
-
-- [Cloudflare Workers Documentation](https://developers.cloudflare.com/workers/)
-- [Wrangler CLI Documentation](https://developers.cloudflare.com/workers/wrangler/)
-- [Workers Runtime APIs](https://developers.cloudflare.com/workers/runtime-apis/)
+The deployment job runs the test suite before executing `wrangler deploy`.
