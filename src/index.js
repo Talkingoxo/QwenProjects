@@ -1,38 +1,44 @@
-/**
- * Cloudflare Worker entry point
- * @param {Request} request - The incoming request
- * @param {Env} env - Environment variables and bindings
- * @param {ExecutionContext} ctx - Execution context
- * @returns {Response}
- */
+const JSON_HEADERS = {
+  'content-type': 'application/json; charset=utf-8',
+  'cache-control': 'no-store'
+};
+
+function jsonResponse(body, init = {}) {
+  return new Response(JSON.stringify(body), {
+    ...init,
+    headers: {
+      ...JSON_HEADERS,
+      ...(init.headers ?? {})
+    }
+  });
+}
+
 export default {
-  async fetch(request, env, ctx) {
+  async fetch(request) {
     const url = new URL(request.url);
 
-    // Simple routing example
+    if (request.method !== 'GET' && request.method !== 'HEAD') {
+      return jsonResponse(
+        { error: 'Method Not Allowed' },
+        { status: 405, headers: { allow: 'GET, HEAD' } }
+      );
+    }
+
     if (url.pathname === '/') {
-      return new Response(JSON.stringify({
-        message: 'Hello from Cloudflare Workers!',
+      return jsonResponse({
+        message: 'QwenProjects Worker is running',
         path: url.pathname,
         method: request.method
-      }), {
-        headers: { 'Content-Type': 'application/json' }
       });
     }
 
     if (url.pathname === '/api') {
-      return new Response(JSON.stringify({
-        status: 'API endpoint working',
+      return jsonResponse({
+        status: 'ok',
         timestamp: new Date().toISOString()
-      }), {
-        headers: { 'Content-Type': 'application/json' }
       });
     }
 
-    // Default 404
-    return new Response('Not Found', { 
-      status: 404,
-      headers: { 'Content-Type': 'text/plain' }
-    });
+    return jsonResponse({ error: 'Not Found' }, { status: 404 });
   }
 };
