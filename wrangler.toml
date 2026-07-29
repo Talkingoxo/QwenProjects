@@ -1,0 +1,26 @@
+name = "cloudflare-worker"
+main = "src/index.js"
+compatibility_date = "2024-01-01"
+# Ensure wrangler treats this as a worker script, not a static site
+# If you want to serve static files, uncomment the next line and add an assets directory
+# assets = { directory = "./public" }
+
+[build]
+command = ""
+watch_dir = "src/"
+
+# [vars]
+# MY_VAR = "my-variable"
+
+# [[kv_namespaces]]
+# binding = "MY_KV_NAMESPACE"
+# id = "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
+
+# [[r2_buckets]]
+# binding = "MY_BUCKET"
+# bucket_name = "my-bucket"
+
+# [[d1_databases]]
+# binding = "DB"
+# database_name = "my-database"
+# database_id = ""
