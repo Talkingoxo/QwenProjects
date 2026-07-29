@@ -1,31 +1,37 @@
-import { describe, it, expect } from 'vitest';
+import test from 'node:test';
+import assert from 'node:assert/strict';
+import worker from './index.js';
 
-describe('Cloudflare Worker', () => {
-  it('should return hello message at root', async () => {
-    const worker = await import('../src/index.js');
-    const request = new Request('http://example.com/');
-    const response = await worker.default.fetch(request);
-    
-    expect(response.status).toBe(200);
-    const data = await response.json();
-    expect(data.message).toContain('Hello from Cloudflare Workers!');
-  });
+test('GET / returns the worker status', async () => {
+  const response = await worker.fetch(new Request('https://example.com/'));
+  const body = await response.json();
 
-  it('should return API response at /api', async () => {
-    const worker = await import('../src/index.js');
-    const request = new Request('http://example.com/api');
-    const response = await worker.default.fetch(request);
-    
-    expect(response.status).toBe(200);
-    const data = await response.json();
-    expect(data.status).toBe('API endpoint working');
-  });
+  assert.equal(response.status, 200);
+  assert.equal(body.message, 'QwenProjects Worker is running');
+  assert.equal(body.path, '/');
+});
 
-  it('should return 404 for unknown routes', async () => {
-    const worker = await import('../src/index.js');
-    const request = new Request('http://example.com/unknown');
-    const response = await worker.default.fetch(request);
-    
-    expect(response.status).toBe(404);
-  });
+test('GET /api returns a valid status payload', async () => {
+  const response = await worker.fetch(new Request('https://example.com/api'));
+  const body = await response.json();
+
+  assert.equal(response.status, 200);
+  assert.equal(body.status, 'ok');
+  assert.ok(!Number.isNaN(Date.parse(body.timestamp)));
+});
+
+test('unknown routes return JSON 404', async () => {
+  const response = await worker.fetch(new Request('https://example.com/missing'));
+
+  assert.equal(response.status, 404);
+  assert.deepEqual(await response.json(), { error: 'Not Found' });
+});
+
+test('unsupported methods return 405 and an Allow header', async () => {
+  const response = await worker.fetch(
+    new Request('https://example.com/api', { method: 'POST' })
+  );
+
+  assert.equal(response.status, 405);
+  assert.equal(response.headers.get('allow'), 'GET, HEAD');
 });
