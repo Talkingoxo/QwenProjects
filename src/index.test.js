@@ -11,6 +11,15 @@ test('GET / returns the worker status', async () => {
   assert.equal(body.path, '/');
 });
 
+test('HEAD / is accepted', async () => {
+  const response = await worker.fetch(
+    new Request('https://example.com/', { method: 'HEAD' })
+  );
+
+  assert.equal(response.status, 200);
+  assert.equal(response.headers.get('content-type'), 'application/json; charset=utf-8');
+});
+
 test('GET /api returns a valid status payload', async () => {
   const response = await worker.fetch(new Request('https://example.com/api'));
   const body = await response.json();
