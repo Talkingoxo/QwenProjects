@@ -1,23 +1,20 @@
-# QwenProjects Worker
+# LocalConvert on Cloudflare Workers
 
-This repository is a Cloudflare Worker project. The deployable application lives directly on the `main` branch:
+A browser-based file conversion website served directly from the Worker root URL. The selected files stay in the browser and are not uploaded to the Worker.
 
-- Rendered application: `src/index.js`
-- Worker configuration: `wrangler.toml`
-- Package scripts: `package.json`
+## Direct website
 
-## Endpoints
+The design is returned at `/`. No additional route is required.
 
-| Method | Path | Result |
-| --- | --- | --- |
-| `GET` / `HEAD` | `/` | Rendered HTML application page |
-| `GET` / `HEAD` | `/api` | JSON service status and timestamp |
-| Other methods | Any path | `405 Method Not Allowed` |
-| `GET` / `HEAD` | Any other path | Rendered HTML `404` page |
+## Working converters
 
-## Local validation
+- Images: PNG, JPEG and WebP through the browser Canvas API
+- PDF merging through PDF-Lib, loaded only when selected
+- DOCX to HTML or text through Mammoth, loaded only when selected
+- XLSX/XLS/ODS to CSV or JSON through SheetJS, loaded only when selected
+- JSON and CSV conversion through built-in JavaScript
 
-Requires Node.js 22 or newer.
+## Local verification
 
 ```bash
 npm install
@@ -26,37 +23,11 @@ npm run check
 npm run dev
 ```
 
-`npm run check` compiles the Worker with Wrangler without deploying it.
-
 ## Cloudflare Workers Builds
 
-Use these settings when connecting this repository:
-
 - Production branch: `main`
-- Root directory: leave empty, or use `/`
+- Root directory: empty or `/`
 - Deploy command: `npm run deploy`
-- Build output directory: leave empty
+- Build output directory: empty
 
-The deployable Worker configuration is at the repository root. Do not select a separate `cloudflare-worker` directory.
-
-## AI-generated updates
-
-The Qwen coding agent creates temporary branches named `folder-structure-management-*`. GitHub now handles them automatically:
-
-1. Rebase the update onto the latest `main`.
-2. Reject changes to deployment infrastructure for manual review.
-3. Install dependencies and run the complete test suite.
-4. Compile the Worker with `wrangler deploy --dry-run`.
-5. Push the verified code directly to `main`.
-6. Delete the temporary AI branch.
-
-This means the agent may create a branch briefly, but successful application code lands on the normal `main` page and the temporary branch is removed.
-
-## Manual GitHub Actions deployment
-
-The optional **Deploy Worker** workflow requires these repository secrets:
-
-- `CLOUDFLARE_API_TOKEN`
-- `CLOUDFLARE_ACCOUNT_ID`
-
-The connected Cloudflare Workers Builds integration deploys from `main` and does not use the optional manual GitHub Actions workflow.
+The deployable Worker entry point is `src/index.js`, configured by the root `wrangler.toml`.
