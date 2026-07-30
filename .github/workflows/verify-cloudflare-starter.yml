@@ -1,0 +1,25 @@
+name: Verify Cloudflare starter
+
+on:
+  pull_request:
+    paths:
+      - cloudflare-worker/**
+      - .github/workflows/verify-cloudflare-starter.yml
+
+permissions:
+  contents: read
+
+jobs:
+  dry-run:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    defaults:
+      run:
+        working-directory: cloudflare-worker
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - run: npm install
+      - run: npm run check
