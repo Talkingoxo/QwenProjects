@@ -2,22 +2,25 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import worker from './index.js';
 
-test('GET / returns the worker status', async () => {
+test('GET / renders an HTML application page', async () => {
   const response = await worker.fetch(new Request('https://example.com/'));
-  const body = await response.json();
+  const body = await response.text();
 
   assert.equal(response.status, 200);
-  assert.equal(body.message, 'QwenProjects Worker is running');
-  assert.equal(body.path, '/');
+  assert.equal(response.headers.get('content-type'), 'text/html; charset=utf-8');
+  assert.match(body, /<!doctype html>/i);
+  assert.match(body, /QwenProjects is live\./);
+  assert.match(body, /main \/ src\/index\.js/);
 });
 
-test('HEAD / is accepted', async () => {
+test('HEAD / returns HTML headers without a response body', async () => {
   const response = await worker.fetch(
     new Request('https://example.com/', { method: 'HEAD' })
   );
 
   assert.equal(response.status, 200);
-  assert.equal(response.headers.get('content-type'), 'application/json; charset=utf-8');
+  assert.equal(response.headers.get('content-type'), 'text/html; charset=utf-8');
+  assert.equal(await response.text(), '');
 });
 
 test('GET /api returns a valid status payload', async () => {
@@ -25,15 +28,20 @@ test('GET /api returns a valid status payload', async () => {
   const body = await response.json();
 
   assert.equal(response.status, 200);
+  assert.equal(response.headers.get('content-type'), 'application/json; charset=utf-8');
   assert.equal(body.status, 'ok');
+  assert.equal(body.service, 'qwenprojects');
+  assert.equal(body.branch, 'main');
   assert.ok(!Number.isNaN(Date.parse(body.timestamp)));
 });
 
-test('unknown routes return JSON 404', async () => {
+test('unknown routes render an HTML 404 page', async () => {
   const response = await worker.fetch(new Request('https://example.com/missing'));
+  const body = await response.text();
 
   assert.equal(response.status, 404);
-  assert.deepEqual(await response.json(), { error: 'Not Found' });
+  assert.equal(response.headers.get('content-type'), 'text/html; charset=utf-8');
+  assert.match(body, /The requested page was not found\./);
 });
 
 test('unsupported methods return 405 and an Allow header', async () => {
@@ -43,4 +51,5 @@ test('unsupported methods return 405 and an Allow header', async () => {
 
   assert.equal(response.status, 405);
   assert.equal(response.headers.get('allow'), 'GET, HEAD');
+  assert.deepEqual(await response.json(), { error: 'Method Not Allowed' });
 });
