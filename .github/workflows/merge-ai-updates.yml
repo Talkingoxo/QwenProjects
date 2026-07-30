@@ -1,44 +1,95 @@
-name: Validate and merge AI updates
+name: Promote AI updates to main
 
 on:
+  push:
+    branches:
+      - 'folder-structure-management-*'
   pull_request:
     types:
       - opened
       - synchronize
       - reopened
       - ready_for_review
+      - converted_to_draft
 
 permissions:
   contents: write
   pull-requests: write
 
 jobs:
+  ensure-pull-request:
+    if: >-
+      github.event_name == 'push' &&
+      startsWith(github.ref_name, 'folder-structure-management-')
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    env:
+      GH_TOKEN: ${{ github.token }}
+      SOURCE_BRANCH: ${{ github.ref_name }}
+    steps:
+      - name: Create the promotion pull request when the AI did not create one
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          existing="$(gh pr list \
+            --repo "$GITHUB_REPOSITORY" \
+            --head "$SOURCE_BRANCH" \
+            --base main \
+            --state open \
+            --json number \
+            --jq '.[0].number // empty')"
+
+          if [[ -n "$existing" ]]; then
+            echo "Pull request #$existing already promotes $SOURCE_BRANCH to main."
+            exit 0
+          fi
+
+          gh pr create \
+            --repo "$GITHUB_REPOSITORY" \
+            --base main \
+            --head "$SOURCE_BRANCH" \
+            --title "Promote AI update from $SOURCE_BRANCH" \
+            --body "Automatically created so the AI-generated branch is validated, merged into main, and removed."
+
   validate-and-merge:
     if: >-
-      !github.event.pull_request.draft &&
+      github.event_name == 'pull_request' &&
       github.event.pull_request.head.repo.full_name == github.repository &&
       startsWith(github.head_ref, 'folder-structure-management-')
     runs-on: ubuntu-latest
     timeout-minutes: 15
+    concurrency:
+      group: promote-${{ github.head_ref }}
+      cancel-in-progress: true
     env:
       GH_TOKEN: ${{ github.token }}
       PR_NUMBER: ${{ github.event.pull_request.number }}
       HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+      SOURCE_BRANCH: ${{ github.head_ref }}
     steps:
-      - name: Reject deployment-infrastructure changes
+      - name: Make a draft AI pull request mergeable
         shell: bash
-        run: |
-          set -euo pipefail
-          changed_files="$(gh api --paginate "repos/${GITHUB_REPOSITORY}/pulls/${PR_NUMBER}/files" --jq '.[].filename')"
-          printf '%s\n' "$changed_files"
-          if printf '%s\n' "$changed_files" | grep -Eq '^(\.github/workflows/|wrangler\.(toml|json|jsonc)$|cloudflare-worker/)'; then
-            echo 'AI pull requests may update application code, but deployment infrastructure requires manual review.' >&2
-            exit 1
-          fi
+        run: gh pr ready "$PR_NUMBER" --repo "$GITHUB_REPOSITORY" 2>/dev/null || true
 
       - uses: actions/checkout@v4
         with:
           ref: ${{ github.event.pull_request.head.sha }}
+          fetch-depth: 0
+
+      - name: Reject deployment-infrastructure changes
+        shell: bash
+        run: |
+          set -euo pipefail
+          git fetch origin main --depth=1
+          merge_base="$(git merge-base origin/main HEAD)"
+          changed_files="$(git diff --name-only "$merge_base" HEAD)"
+          printf '%s\n' "$changed_files"
+
+          if printf '%s\n' "$changed_files" | grep -Eq '^(\.github/workflows/|wrangler\.(toml|json|jsonc)$|cloudflare-worker/)'; then
+            echo 'AI application updates may be promoted automatically, but deployment infrastructure requires manual review.' >&2
+            exit 1
+          fi
 
       - uses: actions/setup-node@v4
         with:
@@ -48,7 +99,7 @@ jobs:
       - run: npm test
       - run: npm run check
 
-      - name: Squash merge verified update
+      - name: Squash merge the verified update into main
         shell: bash
         run: |
           set -euo pipefail
@@ -58,3 +109,13 @@ jobs:
             -f sha="$HEAD_SHA" \
             --jq '.merged')"
           test "$merged" = true
+
+      - name: Remove the temporary AI branch
+        if: success()
+        shell: bash
+        run: |
+          set -euo pipefail
+          encoded_branch="$(python3 -c 'import os, urllib.parse; print(urllib.parse.quote(os.environ["SOURCE_BRANCH"], safe=""))')"
+          gh api --method DELETE \
+            "repos/${GITHUB_REPOSITORY}/git/refs/heads/${encoded_branch}" \
+            2>/dev/null || true
