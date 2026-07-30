@@ -8,6 +8,7 @@ test('GET / renders an HTML application page', async () => {
 
   assert.equal(response.status, 200);
   assert.equal(response.headers.get('content-type'), 'text/html; charset=utf-8');
+  assert.equal(response.headers.get('x-content-type-options'), 'nosniff');
   assert.match(body, /<!doctype html>/i);
   assert.match(body, /QwenProjects is live\./);
   assert.match(body, /main \/ src\/index\.js/);
