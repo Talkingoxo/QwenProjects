@@ -1,5 +1,5 @@
 {
-  "name": "qwen-projects-worker",
+  "name": "qwenprojects-localconvert",
   "version": "1.0.0",
   "private": true,
   "type": "module",
@@ -10,6 +10,6 @@
     "test": "node --test"
   },
   "devDependencies": {
-    "wrangler": "^4.107.0"
+    "wrangler": "4.115.0"
   }
 }
