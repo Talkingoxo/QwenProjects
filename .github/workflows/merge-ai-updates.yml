@@ -24,7 +24,8 @@ jobs:
           ref: ${{ github.sha }}
           fetch-depth: 0
 
-      - name: Rebase the AI update onto the latest main branch
+      - name: Inspect and rebase the AI update
+        id: changes
         shell: bash
         run: |
           set -euo pipefail
@@ -37,9 +38,12 @@ jobs:
           printf '%s\n' "$changed_files"
 
           if [[ -z "$changed_files" ]]; then
-            echo 'The branch contains no changes that need promotion.'
+            echo 'has_changes=false' >> "$GITHUB_OUTPUT"
+            echo 'The branch is still empty; it will remain available for the AI to push code.'
             exit 0
           fi
+
+          echo 'has_changes=true' >> "$GITHUB_OUTPUT"
 
           if printf '%s\n' "$changed_files" | grep -Eq '^(\.github/workflows/|wrangler\.(toml|json|jsonc)$|cloudflare-worker/)'; then
             echo 'AI application code may be promoted automatically, but deployment infrastructure requires manual review.' >&2
@@ -49,21 +53,28 @@ jobs:
           git rebase origin/main
 
       - uses: actions/setup-node@v4
+        if: steps.changes.outputs.has_changes == 'true'
         with:
           node-version: 22
 
-      - run: npm install
-      - run: npm test
-      - run: npm run check
+      - if: steps.changes.outputs.has_changes == 'true'
+        run: npm install
+
+      - if: steps.changes.outputs.has_changes == 'true'
+        run: npm test
+
+      - if: steps.changes.outputs.has_changes == 'true'
+        run: npm run check
 
       - name: Push the verified code directly to main
+        if: steps.changes.outputs.has_changes == 'true'
         shell: bash
         run: |
           set -euo pipefail
           git push origin HEAD:main
 
       - name: Remove the temporary AI branch
-        if: success()
+        if: success() && steps.changes.outputs.has_changes == 'true'
         shell: bash
         run: |
           set -euo pipefail
