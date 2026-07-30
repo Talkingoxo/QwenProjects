@@ -17,7 +17,7 @@ This repository is a Cloudflare Worker project. The deployable application lives
 
 ## Local validation
 
-Requires Node.js 20 or newer.
+Requires Node.js 22 or newer.
 
 ```bash
 npm install
