@@ -1,3 +1,4 @@
+# Validated by .github/workflows/cloudflare-readiness.yml
 name = "qwenprojects"
 main = "src/index.js"
 compatibility_date = "2026-07-01"
